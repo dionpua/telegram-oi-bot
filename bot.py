@@ -3,22 +3,54 @@ import requests
 import time
 from telegram import Bot
 
-bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
-chat_id = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-def get_oi():
-    url = "https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT"
-    r = requests.get(url, timeout=10)
-    return float(r.json()["openInterest"])
+SYMBOLS = [
+    'ACHUSDT', 'BELUSDT', 'DUSKUSDT', 'EDUUSDT', 'TUSDT', 'AERGOUSDT',
+    'ALPHAUSDT', 'ARPAUSDT', 'ATAUSDT', 'GHSTUSDT', 'HIGHUSDT',
+    'LOKAUSDT', 'MOVRUSDT', 'OGNUSDT', 'PERPUSDT', 'RDNTUSDT', 'RIFUSDT',
+    'SFPUSDT', 'STORJUSDT', 'TRUUSDT', 'XVSUSDT', 'YGGUSDT', 'ZENUSDT',
+    'CHRUSDT', 'DENTUSDT', 'FUNUSDT', 'PHBUSDT', 'ZILUSDT', 'HBARUSDT',
+    'KAVAUSDT', 'LRCUSDT', 'MANAUSDT', 'NKNUSDT', 'ONTUSDT', 'RLCUSDT',
+    'STXUSDT', 'SYSUSDT', 'TRBUSDT', 'VETUSDT', 'WAXPUSDT', 'XLMUSDT',
+    'XVGUSDT', 'ZECUSDT', 'ZRXUSDT', 'DIAUSDT', 'CTSIUSDT'
+]
 
-print("✅ BTC OI Bot 启动")
+THRESHOLD = 20
+INTERVAL = 60
+
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
+last_oi = {}
+
+def get_open_interest(symbol):
+    try:
+        url = f'https://fapi.binance.com/fapi/v1/openInterest?symbol={symbol}'
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        return float(data['openInterest'])
+    except Exception:
+        print(f"跳过 {symbol}：{symbol} 无合约数据")
+        return None
+
+print("✅ Bot 启动成功，准备进入循环")
 
 while True:
     try:
-        oi = get_oi()
-        print(f"BTCUSDT 当前 OI: {oi}")
-        bot.send_message(chat_id=chat_id, text=f"BTCUSDT 当前 OI: {oi}")
-        time.sleep(60)
+        print("⏳ 正在开始新一轮查询...")
+        for symbol in SYMBOLS:
+            print(f"🔍 正在查询 {symbol}")
+            current_oi = get_open_interest(symbol)
+            if current_oi is None:
+                continue
+            print(f"{symbol} 当前 OI: {current_oi}")
+            if symbol in last_oi:
+                change = ((current_oi - last_oi[symbol]) / last_oi[symbol]) * 100
+                if abs(change) >= THRESHOLD:
+                    msg = f'⚠️ {symbol} OI 变动 {change:.2f}%\n当前OI: {current_oi}'
+                    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=msg)
+            last_oi[symbol] = current_oi
+        time.sleep(INTERVAL)
     except Exception as e:
-        print("❌ 错误：", e)
+        print("❌ 发生错误：", e)
         time.sleep(10)
