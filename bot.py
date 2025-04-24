@@ -14,7 +14,8 @@ def get_oi():
         print("📡 正在请求 Binance API...")
         response = requests.get(url, timeout=10)
         print("🔁 返回内容：", response.text)
-        return float(response.json()["openInterest"])
+        data = response.json()
+        return float(data["openInterest"])
     except Exception as e:
         print("❌ API 请求失败：", e)
         return None
@@ -23,7 +24,10 @@ while True:
     oi = get_oi()
     if oi is not None:
         print(f"📊 BTCUSDT 当前 OI: {oi}")
-        bot.send_message(chat_id=chat_id, text=f"📊 BTCUSDT 当前 OI: {oi}")
+        try:
+            bot.send_message(chat_id=chat_id, text=f"📊 BTCUSDT 当前 OI: {oi}")
+        except Exception as send_err:
+            print("❌ Telegram 推送失败：", send_err)
     else:
         print("⚠️ 没拿到 OI，跳过推送")
     time.sleep(60)
