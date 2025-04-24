@@ -33,9 +33,13 @@ def get_open_interest(symbol):
         print(f"跳过 {symbol}：{symbol} 无合约数据")
         return None
 
+print("✅ Bot 启动成功，准备进入循环")
+
 while True:
     try:
+        print("⏳ 正在开始新一轮查询...")
         for symbol in SYMBOLS:
+            print(f"🔍 正在查询 {symbol}")
             current_oi = get_open_interest(symbol)
             if current_oi is None:
                 continue
@@ -48,5 +52,5 @@ while True:
             last_oi[symbol] = current_oi
         time.sleep(INTERVAL)
     except Exception as e:
-        print("发生错误：", e)
+        print("❌ 发生错误：", e)
         time.sleep(10)
